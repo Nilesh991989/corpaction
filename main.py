@@ -13,10 +13,12 @@ chrome_options = Options()
 chrome_options.add_experimental_option("detach", True)
 category = "Corp. Action"
 
-def printResult(link, data):
+
+def printResult(link, data, fromDate):
     resultarr = []
     resultarr.append(link.text.split("-")[0])
     resultarr.append(link.text.split("-")[1])
+    resultarr.append(fromDate)
     firstrec = data[0].split(',')
     resultarr.append(firstrec[0])
     lastrec = data[len(data) - 1].split(',')
@@ -24,8 +26,6 @@ def printResult(link, data):
     resultarr.append(firstrec[1])
     resultarr.append(lastrec[4])
     resultarr.append(str(float(lastrec[4]) - float(firstrec[1])))
-    resultarr.append(str(((float(lastrec[4]) - float(firstrec[1])) * 100) / float(firstrec[1])))
-    resultarr.append(str(((float(lastrec[4]) - float(firstrec[1])) * 100) / float(firstrec[1])))
     resultarr.append(str(((float(lastrec[4]) - float(firstrec[1])) * 100) / float(firstrec[1])))
     resultarr.append(str((((float(lastrec[4]) - float(firstrec[1])) * 100) / float(firstrec[1])) * 100))
     print(",".join(resultarr))
@@ -58,7 +58,7 @@ def updateCorpPage(driver, fromDate):
 def updateCheckPrice(soup, fromDate):
     datetime_object = datetime.strptime(fromDate, '%d-%b-%Y')
     bsePricestartdt = datetime.strftime(datetime_object + timedelta(days=1), '%d-%b-%Y')
-    bsePriceEndDt = datetime.strftime(datetime_object + timedelta(days=9), '%d-%b-%Y')
+    bsePriceEndDt = datetime.strftime(datetime_object + timedelta(days=5), '%d-%b-%Y')
     xpathforbsePricestartdt = "//a[@data-date='{0}']".format(int(bsePricestartdt.split('-')[0]))
     xpathforbsePriceenddt = "//a[@data-date='{0}']".format(int(bsePriceEndDt.split('-')[0]))
 
@@ -68,10 +68,13 @@ def updateCheckPrice(soup, fromDate):
             bsePriceDriver.get(bsePriceUri)
             bsePriceDriver.fullscreen_window()
             bsePriceDriver.find_element(By.ID, "ContentPlaceHolder1_rad_no1").click()
-
-            bsePriceDriver.find_element(By.ID, "ContentPlaceHolder1_smartSearch").clear()
-            code = link.text.split("-")[1];
+            #bsePriceDriver.find_element(By.ID, "ContentPlaceHolder1_smartSearch").clear()
+            code = link.text.split("-")[1]
             code = code.strip()
+            if not code.isnumeric():
+                code = link.text.split("-")[2]
+                code = code.strip()
+
             bsePriceDriver.find_element(By.ID, "ContentPlaceHolder1_smartSearch").send_keys(code)
             bsePriceDriver.find_element(By.XPATH, "//*[@id=\"ulSearchQuote2\"]/li/a").click()
 
@@ -87,7 +90,7 @@ def updateCheckPrice(soup, fromDate):
             bsePriceTxtToDateDatePickerMonth.select_by_visible_text(bsePriceEndDt.split('-')[1])
             bsePriceDriver.find_element(By.XPATH, xpathforbsePriceenddt).click()
 
-            #element = bsePriceDriver.find_element(By.ID, "ContentPlaceHolder1_btnSubmit").click()
+            element = bsePriceDriver.find_element(By.ID, "ContentPlaceHolder1_btnSubmit").click()
 
             time.sleep(5)
             data = []
@@ -98,18 +101,20 @@ def updateCheckPrice(soup, fromDate):
                 for tddata in trdata.find_all_next('td'):
                     sindta.append(tddata.text.replace(',', ''))
                     i = i + 1
-                    if (i == 13):
+                    if i == 13:
                         break
 
                 data.append(','.join(sindta))
 
-            printResult(link, data)
+            printResult(link, data, fromDate)
             bsePriceDriver.close()
 
 
 if __name__ == "__main__":
-    lastDay = "28-Feb-2023"
+    lastDay = "05-Mar-2023"
+
     for i in range(31):
+        print('execution started')
         datetime_object = datetime.strptime(lastDay, '%d-%b-%Y')
         fromDate = datetime.strftime(datetime_object + timedelta(days=i), '%d-%b-%Y')
         driver = webdriver.Chrome(chrome_options=chrome_options)
@@ -119,3 +124,5 @@ if __name__ == "__main__":
         soup = BeautifulSoup(driver.page_source, "html.parser")
         driver.close()
         updateCheckPrice(soup, fromDate)
+        print('completed execution')
+    exit(0)
